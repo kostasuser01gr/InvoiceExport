@@ -1,0 +1,174 @@
+// This is your Prisma schema file
+// Learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id                  String       @id @default(cuid())
+  key                 String       @unique // "europcar" | "goldcar"
+  name                String
+  logoUrl             String?
+  theme               Json?
+  invoiceSeriesPrefix String // e.g., "ECP-" or "GLD-"
+  taxSettings         Json?
+  users               UserTenant[]
+  customers           Customer[]
+  contracts           Contract[]
+  invoices            Invoice[]
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+}
+
+model User {
+  id            String       @id @default(cuid())
+  email         String       @unique
+  name          String?
+  image         String?
+  emailVerified DateTime?
+  userTenants   UserTenant[]
+  role          Role         @default(USER) // generic top-level role
+  accounts      Account[]
+  sessions      Session[]
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+enum Role {
+  USER
+  STAFF
+  ADMIN
+}
+
+model UserTenant {
+  id       String @id @default(cuid())
+  userId   String
+  tenantId String
+  role     Role   @default(STAFF)
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, tenantId])
+}
+
+model Customer {
+  id        String     @id @default(cuid())
+  tenantId  String
+  name      String
+  email     String?
+  phone     String?
+  afm       String? // Greek VAT/AFM
+  address   String?
+  licenseNo String?
+  idDoc     String?
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contracts Contract[]
+  invoices  Invoice[]
+  createdAt DateTime   @default(now())
+}
+
+model Contract {
+  id            String    @id @default(cuid())
+  tenantId      String
+  customerId    String
+  reservationNo String?
+  vehiclePlate  String?
+  vehicleGroup  String?
+  pickupAt      DateTime?
+  returnAt      DateTime?
+  locationIn    String?
+  locationOut   String?
+  extras        Json?
+  mileageIn     Int?
+  mileageOut    Int?
+  fuelPolicy    String?
+  notes         String?
+  attachments   Json?
+  tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer      Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  invoices      Invoice[]
+  createdAt     DateTime  @default(now())
+}
+
+model Invoice {
+  id         String        @id @default(cuid())
+  tenantId   String
+  customerId String
+  contractId String?
+  number     String?       @unique
+  status     InvoiceStatus @default(DRAFT)
+  issueDate  DateTime?
+  lines      InvoiceLine[]
+  currency   String        @default("EUR")
+  vatRate    Decimal       @default(24)
+  net        Decimal       @default(0)
+  vat        Decimal       @default(0)
+  total      Decimal       @default(0)
+  mydataMark String?
+  pdfUrl     String?
+  meta       Json?
+  tenant     Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer   Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  contract   Contract?     @relation(fields: [contractId], references: [id], onDelete: SetNull)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+}
+
+enum InvoiceStatus {
+  DRAFT
+  REVIEW
+  APPROVED
+  SENT
+  CANCELED
+}
+
+model InvoiceLine {
+  id          String  @id @default(cuid())
+  invoiceId   String
+  description String
+  qty         Decimal @default(1)
+  unitPrice   Decimal @default(0)
+  vatRate     Decimal @default(24)
+  total       Decimal @default(0)
+  invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+}
