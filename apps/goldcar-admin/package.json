@@ -1,0 +1,37 @@
+{
+  "name": "goldcar-admin",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --port 3004",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@invoice-suite/auth": "workspace:*",
+    "@invoice-suite/config": "workspace:*",
+    "@invoice-suite/db": "workspace:*",
+    "@invoice-suite/mydata": "workspace:*",
+    "@invoice-suite/pdf": "workspace:*",
+    "@invoice-suite/ui": "workspace:*",
+    "@invoice-suite/utils": "workspace:*",
+    "lucide-react": "^0.441.0",
+    "next": "^15.0.0",
+    "next-auth": "^4.24.5",
+    "react": "^19.0.0-rc",
+    "react-dom": "^19.0.0-rc"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^8",
+    "eslint-config-next": "^15.0.0",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5"
+  }
+}
