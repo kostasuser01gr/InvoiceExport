@@ -1,417 +1,472 @@
-# Invoice Export — Europcar × Goldcar
+# Invoice Suite — Turborepo Monorepo
 
-Multi-tenant invoicing system for car rental companies with two public QR code intakes, staff-only dashboard, PDF generation, and myDATA integration stub.
+Production-ready **Turborepo monorepo** hosting **four independent Next.js apps** for Europcar and Goldcar Greece invoice management. Each app is deployed as a **separate Vercel Project** from the same GitHub repository.
 
-## 🚀 Features
+## 🏗️ Architecture
 
-### Multi-Tenant Support
-- **Two brands**: Europcar (green theme) and Goldcar (yellow theme)
-- Brand-aware styling, logos, and invoice numbering
-- Separate tenant configurations with custom VAT settings
-
-### Public Customer Intake
-- Multi-step intake form accessible via QR codes
-- Customer information collection (PII with consent)
-- Contract and vehicle details
-- Privacy and data usage consent
-- Brand-themed UI with progress indicator
-
-### Staff Dashboard
-- **Strict RBAC**: Only allowlisted email (`heraklion.airport@europcargreece.com`)
-- KPI overview (Drafts, Pending, Approved, Sent)
-- Invoice management across both brands
-- NextAuth authentication with email magic links
-
-### Invoice Management
-- Draft → Review → Approve → PDF → Email lifecycle
-- Invoice verification page with QR code support
-- myDATA stub integration (ready for AADE production)
-- VAT calculation (24% default, configurable)
-
-### PWA Ready
-- Progressive Web App manifest
-- Installable on mobile devices
-- Offline-ready architecture (ready for service worker)
-
-## 📋 Prerequisites
-
-- **Node.js** 18+ 
-- **PostgreSQL** database (Neon recommended)
-- **npm** or **yarn**
-
-## 🛠️ Installation
-
-### 1. Clone the Repository
-
-```bash
-git clone https://github.com/kostasuser01gr/InvoiceExport.git
-cd InvoiceExport
+```
+invoice-suite/
+├─ apps/
+│  ├─ europcar-intake/       # Public invoice intake (Europcar only)
+│  ├─ europcar-admin/        # Staff dashboard (Europcar only)
+│  ├─ goldcar-intake/        # Public invoice intake (Goldcar only)
+│  └─ goldcar-admin/         # Staff dashboard (Goldcar only)
+├─ packages/
+│  ├─ ui/                    # shadcn/ui components, forms, tables, toasts
+│  ├─ config/                # brand tokens & configs (logos, colors, VAT rules)
+│  ├─ db/                    # Prisma schema, client, repository layer
+│  ├─ auth/                  # Auth.js (NextAuth) config, middleware, RBAC helpers
+│  ├─ pdf/                   # Puppeteer helpers + HTML/React invoice templates
+│  ├─ email/                 # email sender (e.g., Resend) + templates
+│  ├─ mydata/                # AADE myDATA typed client (sandbox‑ready)
+│  └─ utils/                 # zod schemas, money/date, QR utils, error helpers
+├─ turbo.json
+├─ pnpm-workspace.yaml
+├─ package.json
+└─ .github/workflows/ci.yml
 ```
 
-### 2. Install Dependencies
+### Tech Stack
+
+- **Next.js 15+ App Router** for all apps
+- **pnpm** workspaces
+- **Turborepo** pipelines (build, dev, lint, test, typecheck)
+- **TypeScript**, **ESLint + Prettier**
+- **PostgreSQL + Prisma** with brand-specific sequences
+- **Auth.js (NextAuth)** with email magic links
+- **Puppeteer** for pixel-perfect PDF generation
+- **Resend** for email delivery
+- **myDATA (AADE)** client scaffold
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- **Node.js** 18+
+- **pnpm** 9+
+- **PostgreSQL** database
+
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/kostasuser01gr/InvoiceExport.git
+   cd InvoiceExport
+   ```
+
+2. **Install dependencies**
+   ```bash
+   pnpm install
+   ```
+
+3. **Set up environment variables**
+   ```bash
+   # Copy root .env.example
+   cp .env.example .env
+
+   # Copy per-app .env.example files
+   cp apps/europcar-intake/.env.example apps/europcar-intake/.env
+   cp apps/europcar-admin/.env.example apps/europcar-admin/.env
+   cp apps/goldcar-intake/.env.example apps/goldcar-intake/.env
+   cp apps/goldcar-admin/.env.example apps/goldcar-admin/.env
+   ```
+
+4. **Configure environment variables**
+   
+   Edit `.env` and per-app `.env` files with your values. See **Environment Variables** section below.
+
+5. **Set up database**
+   ```bash
+   # Generate Prisma Client
+   cd packages/db
+   pnpm db:generate
+
+   # Push schema to database
+   pnpm db:push
+
+   # Seed demo data
+   pnpm db:seed
+   ```
+
+6. **Run development servers**
+   ```bash
+   # Run all apps concurrently
+   pnpm dev
+
+   # Or run individual apps
+   pnpm dev:europcar-intake   # http://localhost:3001
+   pnpm dev:europcar-admin    # http://localhost:3002
+   pnpm dev:goldcar-intake    # http://localhost:3003
+   pnpm dev:goldcar-admin     # http://localhost:3004
+   ```
+
+## 📋 Environment Variables
+
+### Root `.env` (Shared)
 
 ```bash
-npm install
-```
+# Database (shared)
+DATABASE_URL="postgresql://user:password@host:5432/invoice_suite"
 
-### 3. Set Up Environment Variables
-
-Create a `.env` file in the root directory:
-
-```bash
-cp .env.example .env
-```
-
-Edit `.env` with your credentials:
-
-```env
-# Database
-DATABASE_URL="postgresql://user:password@host:5432/database?sslmode=require"
-
-# NextAuth
-NEXTAUTH_URL="http://localhost:3000"
-NEXTAUTH_SECRET="generate-a-secure-random-string"
+# Email (shared)
 EMAIL_SERVER="smtp://user:pass@smtp.host:587"
-EMAIL_FROM="no-reply@yourdomain.com"
-ALLOWLISTED_STAFF_EMAIL="heraklion.airport@europcargreece.com"
+EMAIL_FROM="noreply@yourdomain.com"
+RESEND_API_KEY=""
 
-# Storage (Vercel Blob)
-BLOB_READ_WRITE_TOKEN="your-vercel-blob-token"
+# myDATA (AADE)
+MYDATA_ENV="SANDBOX"  # or "PRODUCTION"
+MYDATA_USERNAME=""
+MYDATA_SUBSCRIPTION_KEY=""
+MYDATA_VAT_NUMBER=""
 
-# Email (Resend)
-RESEND_API_KEY="re_your_resend_api_key"
-
-# myDATA (stub for now)
-MYDATA_BASE_URL="https://mydata-sandbox.gov.gr"
-MYDATA_USERNAME="your-username"
-MYDATA_PASSWORD="your-password"
-MYDATA_SUBSCRIPTION_KEY="your-key"
+# Logging
+LOG_LEVEL="info"
 ```
 
-### 4. Initialize Database
+### Per-App `.env` Files
 
-Push the Prisma schema to your database:
+Each app in `apps/*/` has its own `.env.example` file. Key variables:
+
+| Variable | Intake Apps | Admin Apps | Description |
+|----------|-------------|------------|-------------|
+| `BRAND` | ✅ | ✅ | `"europcar"` or `"goldcar"` (hardcoded per app) |
+| `PUBLIC_BASE_URL` | ✅ | ✅ | Public URL for QR codes and links |
+| `NEXTAUTH_URL` | ❌ | ✅ | Full URL of the admin app |
+| `NEXTAUTH_SECRET` | ❌ | ✅ | Secret for JWT signing (generate with `openssl rand -base64 32`) |
+| `ALLOWLIST` | ❌ | ✅ | Comma-separated list of allowlisted staff emails |
+
+**Example for `apps/europcar-admin/.env`:**
 
 ```bash
-npm run db:push
+BRAND="europcar"
+NEXTAUTH_URL="https://admin.europcar.yourdomain.com"
+NEXTAUTH_SECRET="your_generated_secret"
+ALLOWLIST="heraklion.airport@europcargreece.com,admin@yourdomain.com"
+PUBLIC_BASE_URL="https://admin.europcar.yourdomain.com"
 ```
-
-### 5. Seed the Database
-
-Create tenants and staff user:
-
-```bash
-npm run db:seed
-```
-
-This creates:
-- ✅ Europcar tenant with prefix `ECP-`
-- ✅ Goldcar tenant with prefix `GLD-`
-- ✅ Staff user linked to both tenants
-
-### 6. Run Development Server
-
-```bash
-npm run dev
-```
-
-Visit [http://localhost:3000](http://localhost:3000)
-
-## 🎯 Usage
-
-### Customer Intake Flow
-
-1. Navigate to home page
-2. Select Europcar or Goldcar brand
-3. Complete the multi-step intake form:
-   - Step 1: Customer Information
-   - Step 2: Contract Details
-   - Step 3: Vehicle Information
-   - Step 4: Review & Consent
-4. Submit to create draft invoice
-
-**QR Code URLs:**
-- Europcar: `https://your-domain.com/intake?brand=europcar`
-- Goldcar: `https://your-domain.com/intake?brand=goldcar`
-
-### Staff Dashboard
-
-1. Navigate to `/admin`
-2. Sign in with allowlisted email
-3. Access dashboard with invoice queues
-4. Review and manage invoices (coming soon: approve, PDF, email)
-
-### Invoice Verification
-
-Access public invoice verification page:
-```
-https://your-domain.com/invoice/{invoiceId}
-```
-
-## 📂 Project Structure
-
-```
-InvoiceExport/
-├── app/
-│   ├── admin/              # Staff dashboard (RBAC protected)
-│   ├── api/
-│   │   ├── auth/           # NextAuth endpoints
-│   │   └── intake/         # Intake form API
-│   ├── intake/             # Public intake form
-│   ├── invoice/[id]/       # Invoice verification
-│   └── page.tsx            # Home / Brand selector
-├── components/
-│   └── ui/                 # Shadcn/UI components
-├── config/
-│   └── tenants.ts          # Brand configurations
-├── lib/
-│   ├── auth.ts             # NextAuth configuration
-│   ├── mydata.ts           # myDATA stub
-│   ├── prisma.ts           # Database client
-│   ├── qr.ts               # QR code generation
-│   ├── utils.ts            # Utility functions
-│   └── validators.ts       # Zod schemas
-├── prisma/
-│   ├── schema.prisma       # Database schema
-│   └── seed.ts             # Seed script
-├── public/
-│   └── manifest.json       # PWA manifest
-└── types/
-    └── next-auth.d.ts      # TypeScript definitions
-```
-
-## 🔐 Security & RBAC
-
-### Authentication
-- **NextAuth** with email (magic link)
-- Session-based authentication
-- Secure session cookies
-
-### Authorization
-- **Allowlist-based**: Only specific email has staff access
-- **Tenant-scoped**: User-tenant relationships
-- **Route protection**: Middleware on `/admin` routes
-- **Database-level**: Role-based UserTenant model
-
-### Allowlisted Staff Email
-By default: `heraklion.airport@europcargreece.com`
-
-To change, update `ALLOWLISTED_STAFF_EMAIL` in `.env`
 
 ## 🗄️ Database Schema
 
+### Brand-Specific Invoice Numbering
+
+Each brand has its own PostgreSQL sequence:
+
+- **Europcar**: `seq_invoice_ecp` → Invoice numbers like `ECP-2025-0001`
+- **Goldcar**: `seq_invoice_gld` → Invoice numbers like `GLD-2025-0001`
+
+The `allocateNextNumber()` function in `packages/db/src/repositories/invoices.ts` allocates the next number atomically using `nextval()`.
+
 ### Key Models
 
-- **Tenant**: Brand configuration (Europcar, Goldcar)
-- **User**: Staff users with email authentication
-- **UserTenant**: M:N relationship with roles
-- **Customer**: Rental customer details
-- **Contract**: Rental contract information
-- **Invoice**: Invoice with status lifecycle
-- **InvoiceLine**: Line items for invoices
+- **Invoice**: Main invoice entity with brand enum, status, amounts, myDATA mark
+- **User**, **Account**, **Session**, **VerificationToken**: NextAuth models
 
-### Invoice Status Flow
+## 🔐 Authentication & Authorization
+
+### Intake Apps
+
+- **No authentication required** (public access)
+- Customers submit invoices directly
+
+### Admin Apps
+
+- **Email magic link authentication** (NextAuth)
+- **Allowlist-based RBAC** via middleware
+- Only emails in `ALLOWLIST` env variable can access
+- Middleware checks on every request (except auth routes)
+
+## 📄 PDF Generation
+
+Uses **Puppeteer** to render invoice pages as pixel-perfect PDFs.
+
+Each app exposes:
+- `/verify/[id]` — Public invoice verification page
+- `/api/invoices/[id]/pdf` — PDF generation endpoint
+
+PDF generation:
+1. Renders the `/verify/[id]` page in headless browser
+2. Uses `emulateMediaType('screen')` and `printBackground: true`
+3. Exports as A4 PDF with brand colors intact
+
+## 🔍 QR Codes
+
+Each invoice has a QR code that links to its verification page:
 
 ```
-DRAFT → REVIEW → APPROVED → SENT → (CANCELED)
+https://intake.europcar.yourdomain.com/verify/cuid123
 ```
 
-## 🚀 Deployment
+QR codes are generated using the `qrcode` library in `packages/utils/src/qr.ts`.
 
-### Vercel Deployment
+## 📧 Email Delivery
 
-1. **Connect Repository**
-   - Import project to Vercel
-   - Connect GitHub repository
+Uses **Resend** API (or SMTP fallback) to send invoices.
 
-2. **Configure Environment Variables**
-   - Add all variables from `.env.example`
-   - Set `NEXTAUTH_URL` to your Vercel domain
+Configured in `packages/email/src/index.ts`.
 
-3. **Set Up Database**
-   - Create Neon PostgreSQL database
-   - Copy connection string to `DATABASE_URL`
+## 🇬🇷 myDATA (AADE) Integration
 
-4. **Deploy**
-   ```bash
-   # Automatic on git push to main
-   git push origin main
-   ```
+Scaffold implementation for Greek Tax Authority integration.
 
-5. **Run Migrations**
-   - Vercel will run `prisma generate` automatically
-   - Manually run seed after first deploy:
-   ```bash
-   npx prisma db seed
-   ```
+**Environments:**
+- `MYDATA_ENV="SANDBOX"` — Test environment
+- `MYDATA_ENV="PRODUCTION"` — Live environment
 
-### Database Provider: Neon
+**Client:** `packages/mydata/src/index.ts`
 
-1. Create account at [neon.tech](https://neon.tech)
-2. Create new project
-3. Copy connection string
-4. Add to Vercel environment variables
+**Admin actions:** Approve → PDF → Email → Send to myDATA (stubbed with mock responses when `MYDATA_SUBSCRIPTION_KEY` is not set)
 
-## 📱 PWA Setup
+## 🚢 Deployment (Vercel Multi-Project)
 
-The app includes a basic PWA manifest at `/public/manifest.json`.
+### Overview
 
-### To Enable Full PWA Features
+Deploy **4 separate Vercel Projects** from the **same GitHub repository**. Each project builds only its app using Vercel's "Root Directory" feature.
 
-1. Add service worker in `/public/sw.js`
-2. Register service worker in app layout
-3. Add offline functionality
-4. Implement background sync for intake
+### Step-by-Step Instructions
 
-### Current PWA Features
-- ✅ Web app manifest
-- ✅ Installable prompt
-- ⏳ Service worker (ready to implement)
-- ⏳ Offline mode (ready to implement)
+#### For Each App (4 times):
 
-## 🧪 Testing
+1. **Import Project**
+   - Go to [vercel.com/new](https://vercel.com/new)
+   - Select your GitHub repository: `kostasuser01gr/InvoiceExport`
+   - Click "Import"
 
-### Unit Tests (Vitest)
+2. **Configure Root Directory**
+   - **Framework Preset**: Next.js
+   - **Root Directory**: Set to one of:
+     - `apps/europcar-intake`
+     - `apps/europcar-admin`
+     - `apps/goldcar-intake`
+     - `apps/goldcar-admin`
+   - **✅ IMPORTANT**: Enable **"Include source files outside of the Root Directory in the Build Step"**
+     - This allows access to `packages/*` shared code
 
-```bash
-npm test
-```
+3. **Environment Variables**
+   - Add variables from the app's `.env.example` file
+   - **Critical variables**:
+     - `DATABASE_URL` (shared database)
+     - `BRAND` (e.g., `"europcar"`)
+     - `PUBLIC_BASE_URL` (app's public URL)
+     - For admin apps:
+       - `NEXTAUTH_URL`
+       - `NEXTAUTH_SECRET`
+       - `ALLOWLIST`
+       - `EMAIL_SERVER`
+       - `EMAIL_FROM`
 
-### E2E Tests (Playwright)
+4. **Domain Configuration**
+   - Map a domain or subdomain:
+     - `intake.europcar.yourdomain.com` → europcar-intake
+     - `admin.europcar.yourdomain.com` → europcar-admin
+     - `intake.goldcar.yourdomain.com` → goldcar-intake
+     - `admin.goldcar.yourdomain.com` → goldcar-admin
 
-```bash
-npm run test:e2e
-```
+5. **Ignored Build Step** (Optional but Recommended)
+   - **Settings** → **Git** → **Ignored Build Step**
+   - Set command:
+     ```bash
+     bash scripts/ignored-build.sh apps/europcar-intake
+     ```
+   - Replace `apps/europcar-intake` with the current app's path
+   - This skips builds when only unrelated code changes
 
-### Linting
+6. **Deploy**
+   - Click "Deploy"
+   - Vercel will build and deploy your app
 
-```bash
-npm run lint
-```
+#### Post-Deployment Checklist
 
-### Type Checking
+- [ ] Run database migrations if needed
+- [ ] Test intake form submission
+- [ ] Test PDF generation endpoint
+- [ ] Test QR code verification
+- [ ] Test admin authentication (magic link)
+- [ ] Test admin dashboard access control
+- [ ] Verify allowlist enforcement
 
-```bash
-npx tsc --noEmit
-```
+### Vercel Ignored Build Step
 
-## 📊 myDATA Integration
+The `scripts/ignored-build.sh` script prevents unnecessary builds.
 
-Currently **stubbed** for development. Returns mock MARK in development mode.
+**How it works:**
+1. Checks which files changed in the commit
+2. If only unrelated apps or packages changed, returns exit code 0 (skip build)
+3. If the current app or its dependencies changed, returns exit code 1 (proceed with build)
 
-### To Enable Production myDATA
+**Per-Project Configuration:**
 
-1. Get AADE credentials
-2. Update `.env` with real credentials
-3. Implement production API call in `lib/mydata.ts`
-4. Test in AADE sandbox environment
+| Project | Ignored Build Command |
+|---------|----------------------|
+| europcar-intake | `bash scripts/ignored-build.sh apps/europcar-intake` |
+| europcar-admin | `bash scripts/ignored-build.sh apps/europcar-admin` |
+| goldcar-intake | `bash scripts/ignored-build.sh apps/goldcar-intake` |
+| goldcar-admin | `bash scripts/ignored-build.sh apps/goldcar-admin` |
 
-### myDATA Flow
-
-1. Invoice approved → Generate PDF
-2. Send to AADE via API
-3. Receive MARK (unique identifier)
-4. Store MARK in `Invoice.mydataMark`
-5. Embed MARK in PDF and email
-
-## 📧 Email Configuration
-
-### Resend (Recommended)
-
-1. Sign up at [resend.com](https://resend.com)
-2. Get API key
-3. Set `RESEND_API_KEY` in `.env`
-
-### Alternative: SMTP
-
-Use any SMTP provider (Gmail, SendGrid, etc.):
-
-```env
-EMAIL_SERVER="smtp://username:password@smtp.example.com:587"
-EMAIL_FROM="no-reply@yourdomain.com"
-```
-
-## 🎨 Brand Customization
-
-### Tenant Configuration
-
-Edit `/config/tenants.ts` to customize:
-
-- Colors (primary, secondary, accent)
-- Logo URLs
-- Invoice number prefixes
-- VAT settings
-- Company information
-
-### Adding a New Brand
-
-1. Add configuration to `TENANTS` object
-2. Run seed script to create tenant in database
-3. Add logo to `/public/logos/`
-4. Update QR code generation
-
-## 🔧 Development
+## 🛠️ Development
 
 ### Available Scripts
 
 ```bash
-npm run dev          # Start development server
-npm run build        # Build for production
-npm run start        # Start production server
-npm run lint         # Lint code
-npm test             # Run unit tests
-npm run test:e2e     # Run E2E tests
-npm run db:push      # Push schema to database
-npm run db:seed      # Seed database
-npm run db:studio    # Open Prisma Studio
+# Development
+pnpm dev                      # Run all apps concurrently
+pnpm dev:europcar-intake      # Run only europcar-intake
+pnpm dev:europcar-admin       # Run only europcar-admin
+pnpm dev:goldcar-intake       # Run only goldcar-intake
+pnpm dev:goldcar-admin        # Run only goldcar-admin
+
+# Building
+pnpm build                    # Build all apps and packages
+pnpm build --filter=europcar-intake  # Build specific app
+
+# Linting & Type Checking
+pnpm lint                     # Lint all apps
+pnpm typecheck                # Type check all apps
+
+# Database
+pnpm db:generate              # Generate Prisma Client
+pnpm db:push                  # Push schema to database
+
+# Formatting
+pnpm format                   # Format all files with Prettier
+
+# Cleanup
+pnpm clean                    # Clean build outputs and node_modules
 ```
 
-### Database Management
+### Turborepo Caching
+
+Turborepo caches build outputs to speed up subsequent builds.
+
+**Cache locations:**
+- Local: `.turbo/`
+- Remote: Configure Vercel Remote Cache for team-wide caching
+
+## 📦 Package Structure
+
+### Shared Packages
+
+All packages are in `packages/` and use the `@invoice-suite/*` namespace:
+
+| Package | Description |
+|---------|-------------|
+| `@invoice-suite/config` | Brand tokens, logos, colors, VAT settings |
+| `@invoice-suite/db` | Prisma schema, client, repositories |
+| `@invoice-suite/auth` | NextAuth config, RBAC guards |
+| `@invoice-suite/ui` | Shared UI components (Button, Card, etc.) |
+| `@invoice-suite/utils` | Zod schemas, formatters, QR helpers |
+| `@invoice-suite/pdf` | Puppeteer PDF generation |
+| `@invoice-suite/email` | Email sending via Resend |
+| `@invoice-suite/mydata` | myDATA (AADE) API client |
+
+### Adding Dependencies to Packages
 
 ```bash
-# View database in browser
-npm run db:studio
+# Add dependency to specific package
+pnpm add --filter @invoice-suite/db prisma
 
-# Create migration
-npx prisma migrate dev --name description
-
-# Reset database (⚠️ deletes all data)
-npx prisma migrate reset
+# Add devDependency to all packages
+pnpm add -D --filter "./packages/*" typescript
 ```
+
+## 🧪 Testing
+
+### Unit Tests
+
+```bash
+pnpm test
+```
+
+### E2E Tests
+
+```bash
+pnpm test:e2e
+```
+
+## 🔒 Security Best Practices
+
+1. **Never commit secrets** — Use `.env` files (gitignored)
+2. **Server-only env vars** — Keep sensitive vars server-side (NextAuth, DB, API keys)
+3. **Allowlist enforcement** — Admin apps check allowlist in middleware AND server actions
+4. **JWT secrets** — Generate strong `NEXTAUTH_SECRET` values
+5. **Database credentials** — Use connection pooling and SSL
+6. **CORS** — API routes are same-origin by default (no CORS needed)
+
+## 📝 Release Process
+
+### Development
+
+1. Create feature branch from `main`
+2. Make changes
+3. Push to GitHub
+4. Vercel creates **Preview Deployment** for each app automatically
+5. Review previews
+6. Merge PR to `main`
+
+### Production
+
+1. Merge to `main` triggers **Production Deployment** for all changed apps
+2. Vercel's ignored build step skips unchanged apps
+3. Each app rolls out independently
+
+### Rollback
+
+To rollback a specific app:
+
+1. Go to Vercel Dashboard → Project → Deployments
+2. Find the last working deployment
+3. Click "Promote to Production"
 
 ## 🐛 Troubleshooting
 
 ### Build Errors
 
-**Font loading error**: Removed Google Fonts due to network restrictions. Uses system fonts.
+**"Cannot find module '@invoice-suite/...'**
+- Ensure `transpilePackages` is configured in `next.config.js`
+- Run `pnpm install` to link workspaces
 
-**useSearchParams error**: All dynamic pages wrapped in Suspense boundary.
+**Prisma Client errors**
+- Run `pnpm db:generate` in `packages/db/`
+- Ensure `DATABASE_URL` is set
 
-### Database Errors
+### Runtime Errors
 
-**Connection refused**: Check `DATABASE_URL` is correct and database is running.
+**"Access denied: not allowlisted"** (Admin apps)
+- Check `ALLOWLIST` env variable includes your email
+- Email must match exactly (case-insensitive)
 
-**Missing tables**: Run `npm run db:push` to create tables.
+**PDF generation fails**
+- Ensure Puppeteer dependencies are installed on Vercel
+- Check `PUBLIC_BASE_URL` is correct
+- Verify `/verify/[id]` page renders correctly
 
-### Authentication Errors
+**QR code not working**
+- Check `PUBLIC_BASE_URL` env variable
+- Ensure invoice exists in database
 
-**Email not sending**: Verify `EMAIL_SERVER` and `EMAIL_FROM` are configured.
+### Database Issues
 
-**Access denied**: Ensure your email matches `ALLOWLISTED_STAFF_EMAIL`.
+**Connection refused**
+- Verify `DATABASE_URL` is correct
+- Check database is accessible from your network
+- Use connection pooling for production
 
-## 📝 License
-
-This project is proprietary software for Europcar Greece and Goldcar Greece.
-
-## 👥 Contributors
-
-- Initial development: GitHub Copilot Agent
-- Maintained by: Europcar Greece IT Team
+**Sequences out of sync**
+- Reset sequences if needed:
+  ```sql
+  SELECT setval('seq_invoice_ecp', (SELECT MAX(id) FROM "Invoice" WHERE brand = 'EUROPCAR'));
+  SELECT setval('seq_invoice_gld', (SELECT MAX(id) FROM "Invoice" WHERE brand = 'GOLDCAR'));
+  ```
 
 ## 📞 Support
 
-For issues or questions, contact: [heraklion.airport@europcargreece.com](mailto:heraklion.airport@europcargreece.com)
+For issues or questions:
+- **Email**: heraklion.airport@europcargreece.com
+- **GitHub Issues**: [Create an issue](https://github.com/kostasuser01gr/InvoiceExport/issues)
+
+## 📄 License
+
+Proprietary software for Europcar Greece and Goldcar Greece.
 
 ---
 
-**Built with** Next.js 15 • TypeScript • Prisma • PostgreSQL • Tailwind CSS • NextAuth • Vercel
+**Built with** Next.js 15 • TypeScript • Prisma • PostgreSQL • Turborepo • Vercel
