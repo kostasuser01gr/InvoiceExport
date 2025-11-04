@@ -1,6 +1,6 @@
 import puppeteer from "puppeteer";
 
-export async function renderInvoicePDF(url: string): Promise<Buffer> {
+export async function renderInvoicePDF(url: string): Promise<Uint8Array> {
   const browser = await puppeteer.launch({
     headless: true,
     args: ["--no-sandbox", "--disable-setuid-sandbox"],

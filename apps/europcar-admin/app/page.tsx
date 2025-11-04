@@ -2,6 +2,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@invoice-suite/ui/card
 import { listInvoicesByBrand } from "@invoice-suite/db/repositories";
 import { formatCurrency, formatDate } from "@invoice-suite/utils";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminPage() {
   const invoices = await listInvoicesByBrand("EUROPCAR", 20);
 

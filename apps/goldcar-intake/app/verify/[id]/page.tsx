@@ -7,15 +7,16 @@ import Image from "next/image";
 export default async function VerifyPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  const invoice = await getInvoiceById(params.id);
+  const { id } = await params;
+  const invoice = await getInvoiceById(id);
 
   if (!invoice) {
     notFound();
   }
 
-  const verifyUrl = `${process.env.PUBLIC_BASE_URL || "http://localhost:3001"}/verify/${invoice.id}`;
+  const verifyUrl = `${process.env.PUBLIC_BASE_URL || "http://localhost:3003"}/verify/${id}`;
   const qrCode = await qrDataURL(verifyUrl);
 
   return (

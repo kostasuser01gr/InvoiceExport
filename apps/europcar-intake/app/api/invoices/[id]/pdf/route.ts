@@ -4,21 +4,22 @@ import { renderInvoicePDF } from "@invoice-suite/pdf";
 
 export async function GET(
   _request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const invoice = await getInvoiceById(params.id);
+    const { id } = await params;
+    const invoice = await getInvoiceById(id);
 
     if (!invoice) {
       return new NextResponse("Invoice not found", { status: 404 });
     }
 
     const baseUrl = process.env.PUBLIC_BASE_URL || "http://localhost:3001";
-    const invoiceUrl = `${baseUrl}/verify/${params.id}`;
+    const invoiceUrl = `${baseUrl}/verify/${id}`;
 
     const pdf = await renderInvoicePDF(invoiceUrl);
 
-    return new NextResponse(pdf, {
+    return new NextResponse(pdf as unknown as BodyInit, {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="invoice-${invoice.number}.pdf"`,
