@@ -405,8 +405,7 @@ This project is proprietary software for Europcar Greece and Goldcar Greece.
 
 ## 👥 Contributors
 
-- Initial development: GitHub Copilot Agent
-- Maintained by: Europcar Greece IT Team
+- "Konstantinos Foskolakis - Full Stack Developer
 
 ## 📞 Support
 
