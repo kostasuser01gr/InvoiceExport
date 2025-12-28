@@ -409,7 +409,7 @@ This project is proprietary software for Europcar Greece and Goldcar Greece.
 
 ## 📞 Support
 
-For issues or questions, contact: [heraklion.airport@europcargreece.com](mailto:heraklion.airport@europcargreece.com)
+For issues or questions, contact: 
 
 ---
 
